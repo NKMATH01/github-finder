@@ -100,32 +100,56 @@ async def classify_top3(
 위 후보들 중 Top 3를 선정하되, 서로 다른 가치를 제공하는 후보를 골라주세요.
 """
 
-    raw = await call_gpt4o_structured(
-        system_prompt=SYSTEM_PROMPT,
-        user_prompt=user_prompt,
-        json_schema=THREE_TYPE_CLASSIFICATION_SCHEMA,
-        schema_name="three_type_classification",
-        temperature=0.3,
-    )
-
-    classified = []
-    for c in raw["candidates"]:
-        # 카테고리명 정규화
-        category = CATEGORY_MAP.get(c["assigned_category"], c["assigned_category"])
-        classified.append(
-            ClassifiedCandidate(
-                repo_name=c["repo_name"],
-                category=category,
-                category_reason=c["category_reason"],
-                rank=c["rank"],
-            )
+    try:
+        raw = await call_gpt4o_structured(
+            system_prompt=SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+            json_schema=THREE_TYPE_CLASSIFICATION_SCHEMA,
+            schema_name="three_type_classification",
+            temperature=0.3,
         )
 
-    result = ClassificationResult(
-        classification_type=raw["classification_type"],
-        classification_reason=raw["classification_reason"],
-        candidates=classified,
-    )
+        classified = []
+        for c in raw["candidates"]:
+            # 카테고리명 정규화
+            category = CATEGORY_MAP.get(c["assigned_category"], c["assigned_category"])
+            classified.append(
+                ClassifiedCandidate(
+                    repo_name=c["repo_name"],
+                    category=category,
+                    category_reason=c["category_reason"],
+                    rank=c["rank"],
+                )
+            )
+
+        result = ClassificationResult(
+            classification_type=raw["classification_type"],
+            classification_reason=raw["classification_reason"],
+            candidates=classified,
+        )
+
+    except Exception as e:
+        # Fallback: GPT-4o 실패 시 점수 순 상위 3개를 기본 카테고리로 분류
+        logger.warning("GPT-4o 분류 실패, 점수 기반 fallback 적용: %s", e)
+
+        fallback_categories = ["완성도최고", "통합용이", "고정밀"]
+        sorted_results = sorted(candidates, key=lambda r: r.total_score, reverse=True)[:3]
+
+        fallback_classified = [
+            ClassifiedCandidate(
+                repo_name=r.repo_name,
+                category=fallback_categories[i],
+                category_reason=f"GPT-4o 분류 실패로 점수 순위 {i + 1}위 기반 자동 배정",
+                rank=i + 1,
+            )
+            for i, r in enumerate(sorted_results)
+        ]
+
+        result = ClassificationResult(
+            classification_type="personality",
+            classification_reason="점수 기반 fallback (GPT-4o 분류 실패)",
+            candidates=fallback_classified,
+        )
 
     logger.info(
         "3종 분류 완료: type=%s, top3=%s",

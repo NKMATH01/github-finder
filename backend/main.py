@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from config import settings
 from models.error_models import AppException
-from routers import search, clone, prompts, favorites
+from routers import search, clone, prompts, favorites, skills
 
 logging.basicConfig(
     level=logging.INFO,
@@ -78,6 +78,7 @@ app.include_router(search.router, prefix="/api", tags=["search"])
 app.include_router(clone.router, prefix="/api", tags=["clone"])
 app.include_router(prompts.router, prefix="/api", tags=["prompts"])
 app.include_router(favorites.router, prefix="/api", tags=["favorites"])
+app.include_router(skills.router, prefix="/api", tags=["skills"])
 
 
 # 시스템 엔드포인트

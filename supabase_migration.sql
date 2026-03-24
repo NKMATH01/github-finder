@@ -13,9 +13,11 @@ CREATE TABLE IF NOT EXISTS searches (
   target_platform TEXT DEFAULT 'any',
   candidate_count INTEGER DEFAULT 0,
   status TEXT DEFAULT 'pending'
-    CHECK (status IN ('pending','processing','completed','failed')),
+    CHECK (status IN ('pending','running','processing','completed','failed','no_results')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  current_step INTEGER DEFAULT 0,
+  error_log JSONB DEFAULT '[]'::JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_searches_created_at ON searches(created_at DESC);
@@ -93,7 +95,17 @@ CREATE TABLE IF NOT EXISTS prompts (
 
 CREATE INDEX IF NOT EXISTS idx_prompts_candidate_id ON prompts(candidate_id);
 
--- 5. favorites
+-- 5. github_cache (API 응답 캐시)
+CREATE TABLE IF NOT EXISTS github_cache (
+  cache_key TEXT PRIMARY KEY,
+  response_data JSONB NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_github_cache_expires ON github_cache(expires_at);
+
+-- 6. favorites
 CREATE TABLE IF NOT EXISTS favorites (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   repo_url TEXT NOT NULL UNIQUE,
@@ -106,12 +118,57 @@ CREATE TABLE IF NOT EXISTS favorites (
 
 CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at DESC);
 
+-- 7. skill_searches (스킬 검색 이력)
+CREATE TABLE IF NOT EXISTS skill_searches (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  query_ko TEXT NOT NULL,
+  brief JSONB NOT NULL DEFAULT '{}'::JSONB,
+  keywords_en TEXT[] NOT NULL DEFAULT '{}',
+  candidate_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'pending'
+    CHECK (status IN ('pending','running','processing','completed','failed','no_results')),
+  current_step INTEGER DEFAULT 0,
+  error_log JSONB DEFAULT '[]'::JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_skill_searches_created_at ON skill_searches(created_at DESC);
+
+-- 8. skill_candidates (스킬 후보)
+CREATE TABLE IF NOT EXISTS skill_candidates (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  search_id UUID REFERENCES skill_searches(id) ON DELETE CASCADE,
+  skill_id TEXT NOT NULL,
+  skill_name TEXT NOT NULL,
+  github_url TEXT NOT NULL,
+  skill_path TEXT NOT NULL DEFAULT '',
+  author TEXT,
+  stars INTEGER DEFAULT 0,
+  category TEXT NOT NULL
+    CHECK (category IN ('완성도최고','바로적용','가장강력')),
+  category_reason TEXT,
+  total_score INTEGER DEFAULT 0,
+  score_detail JSONB NOT NULL DEFAULT '{}'::JSONB,
+  skill_md_preview TEXT,
+  pros TEXT[] DEFAULT '{}',
+  cons TEXT[] DEFAULT '{}',
+  warnings TEXT[] DEFAULT '{}',
+  install_command TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_skill_candidates_search_id ON skill_candidates(search_id);
+
 -- RLS 비활성화 (개인용 로컬 도구)
 ALTER TABLE searches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE candidates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cloned_repos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prompts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE github_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skill_searches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skill_candidates ENABLE ROW LEVEL SECURITY;
 
 -- 모든 작업 허용 (service_key 사용)
 CREATE POLICY "Allow all for service key" ON searches FOR ALL USING (true);
@@ -119,3 +176,6 @@ CREATE POLICY "Allow all for service key" ON candidates FOR ALL USING (true);
 CREATE POLICY "Allow all for service key" ON cloned_repos FOR ALL USING (true);
 CREATE POLICY "Allow all for service key" ON prompts FOR ALL USING (true);
 CREATE POLICY "Allow all for service key" ON favorites FOR ALL USING (true);
+CREATE POLICY "Allow all for service key" ON github_cache FOR ALL USING (true);
+CREATE POLICY "Allow all for service key" ON skill_searches FOR ALL USING (true);
+CREATE POLICY "Allow all for service key" ON skill_candidates FOR ALL USING (true);

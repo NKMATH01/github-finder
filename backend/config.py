@@ -77,6 +77,14 @@ class Settings:
         return int(os.getenv("CLONE_TIMEOUT_SEC", "120"))
 
     @property
+    def SKILLSMP_API_KEY(self) -> str:
+        return os.getenv("SKILLSMP_API_KEY", "")
+
+    @property
+    def SKILLSMP_BASE_URL(self) -> str:
+        return "https://skillsmp.com/api/v1"
+
+    @property
     def FRONTEND_URL(self) -> str:
         return os.getenv("FRONTEND_URL", "http://localhost:3000")
 

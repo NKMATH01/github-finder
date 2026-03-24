@@ -5,6 +5,8 @@ import type { AppView, BriefInput, Candidate } from "@/lib/types";
 import { useSearch } from "@/hooks/useSearch";
 import { useClone } from "@/hooks/useClone";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useSkillSearch } from "@/hooks/useSkillSearch";
+import type { SkillSearchInput } from "@/hooks/useSkillSearch";
 import { BriefForm } from "@/components/brief/BriefForm";
 import { CandidateCard } from "@/components/results/CandidateCard";
 import { ComparisonTable } from "@/components/results/ComparisonTable";
@@ -18,16 +20,22 @@ import { StorageInfo } from "@/components/sidebar/StorageInfo";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchProgress } from "@/components/SearchProgress";
+import { SkillBriefForm } from "@/components/skills/SkillBriefForm";
+import { SkillCandidateCard } from "@/components/skills/SkillCandidateCard";
 
 export default function Home() {
   const [view, setView] = useState<AppView>("brief");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
+  const [activeTab, setActiveTab] = useState("github");
+  const [skillView, setSkillView] = useState<"brief" | "loading" | "results">("brief");
 
   const search = useSearch();
   const clone = useClone();
   const favorites = useFavorites();
+  const skillSearch = useSkillSearch();
 
   const handleSubmit = async (brief: BriefInput) => {
     setView("loading");
@@ -66,6 +74,20 @@ export default function Home() {
   const handleBack = () => {
     if (view === "clone") { setView("results"); clone.reset(); }
     else if (view === "results" || view === "loading") { setView("brief"); search.reset(); }
+  };
+
+  // ─── 스킬 검색 핸들러 ───
+
+  const handleSkillSubmit = async (brief: SkillSearchInput) => {
+    setSkillView("loading");
+    await skillSearch.submitBrief(brief);
+  };
+
+  if (skillView === "loading" && skillSearch.results) setSkillView("results");
+
+  const handleSkillBack = () => {
+    setSkillView("brief");
+    skillSearch.reset();
   };
 
   return (
@@ -125,8 +147,30 @@ export default function Home() {
           )}
 
           <div className="flex-1 min-w-0">
-            {/* 브리프 입력 */}
-            {view === "brief" && (
+            {/* 브리프 입력 — 탭 전환 */}
+            {view === "brief" && skillView === "brief" && (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="mx-auto mb-8 grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="github" className="gap-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    GitHub 레포 검색
+                  </TabsTrigger>
+                  <TabsTrigger value="skills" className="gap-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" /></svg>
+                    Claude 스킬 검색
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="github">
+                  <BriefForm onSubmit={handleSubmit} isLoading={search.isSubmitting} />
+                </TabsContent>
+                <TabsContent value="skills">
+                  <SkillBriefForm onSubmit={handleSkillSubmit} isLoading={skillSearch.isSubmitting} />
+                </TabsContent>
+              </Tabs>
+            )}
+
+            {/* GitHub 레포 검색 — 브리프 (탭 없이 단독, 스킬 검색 진행 중일 때) */}
+            {view === "brief" && skillView !== "brief" && (
               <BriefForm onSubmit={handleSubmit} isLoading={search.isSubmitting} />
             )}
 
@@ -186,6 +230,57 @@ export default function Home() {
 
                 <p className="text-center text-sm text-slate-400">
                   이 중에서 프로젝트 상황에 맞는 후보를 골라 테스트해보세요.
+                </p>
+              </div>
+            )}
+
+            {/* 스킬 검색 — 로딩 */}
+            {skillView === "loading" && view === "brief" && (
+              <div className="flex min-h-[60vh] items-center justify-center">
+                {skillSearch.submitError ? (
+                  <div className="w-full max-w-md">
+                    <ErrorDisplay error={skillSearch.submitError} onRetry={handleSkillBack} />
+                  </div>
+                ) : skillSearch.status ? (
+                  <SearchProgress status={skillSearch.status} />
+                ) : (
+                  <div className="w-full max-w-md space-y-8 text-center">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10">
+                      <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-slate-200 border-t-violet-600" />
+                    </div>
+                    <p className="text-sm text-slate-500">연결 중...</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 스킬 검색 — 결과 */}
+            {skillView === "results" && skillSearch.results && view === "brief" && (
+              <div className="space-y-8">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">스킬 검색 결과</h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {skillSearch.results.candidates.length}개의 최적 스킬을 찾았습니다
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleSkillBack} className="self-start rounded-xl">
+                    새 검색
+                  </Button>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-3">
+                  {skillSearch.results.candidates.map((candidate, idx) => (
+                    <SkillCandidateCard
+                      key={candidate.skill_id}
+                      candidate={candidate}
+                      rank={idx + 1}
+                    />
+                  ))}
+                </div>
+
+                <p className="text-center text-sm text-slate-400">
+                  마음에 드는 스킬의 SKILL.md를 복사하여 프로젝트에 설치하세요.
                 </p>
               </div>
             )}
