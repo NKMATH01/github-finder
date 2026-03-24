@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Build
+.next/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# Cloned repos
+cloned_repos/
+!cloned_repos/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build info
+*.tsbuildinfo
