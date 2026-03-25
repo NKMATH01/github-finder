@@ -177,6 +177,47 @@ export interface StorageInfo {
   }>;
 }
 
+// ─── Skill Search ───
+
+export interface SkillScoreDetail {
+  feature_match: number;
+  quality: number;
+  compatibility: number;
+  community_trust: number;
+  install_ease: number;
+}
+
+export interface SkillCandidate {
+  skill_id: string;
+  skill_name: string;
+  github_url: string;
+  skill_path: string;
+  author: string;
+  stars: number;
+  category: string;
+  category_reason: string;
+  total_score: number;
+  score_detail: SkillScoreDetail;
+  confidence_label: string;
+  skill_md_preview: string;
+  pros: string[];
+  cons: string[];
+  warnings: string[];
+  install_command?: string;
+}
+
+export interface SkillSearchResults {
+  search_id: string;
+  query_ko: string;
+  candidates: SkillCandidate[];
+}
+
+export interface SkillSearchInput {
+  query_ko: string;
+  project_stack?: string;
+  target_tool?: string;
+}
+
 // ─── Error ───
 
 export interface ApiError {

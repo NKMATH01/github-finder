@@ -3,45 +3,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/api";
-import type { SearchStatus, SSEEvent } from "@/lib/types";
+import type { SearchStatus, SSEEvent, SkillCandidate, SkillSearchResults, SkillSearchInput } from "@/lib/types";
+
+export type { SkillCandidate, SkillSearchResults, SkillSearchInput };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-
-export interface SkillCandidate {
-  skill_id: string;
-  skill_name: string;
-  github_url: string;
-  skill_path: string;
-  author: string;
-  stars: number;
-  category: string;
-  category_reason: string;
-  total_score: number;
-  score_detail: {
-    feature_match: number;
-    quality: number;
-    compatibility: number;
-    community_trust: number;
-    install_ease: number;
-  };
-  skill_md_preview: string;
-  pros: string[];
-  cons: string[];
-  warnings: string[];
-  install_command?: string;
-}
-
-export interface SkillSearchResults {
-  search_id: string;
-  query_ko: string;
-  candidates: SkillCandidate[];
-}
-
-export interface SkillSearchInput {
-  query_ko: string;
-  project_stack?: string;
-  target_tool?: string;
-}
 
 export function useSkillSearch() {
   const [searchId, setSearchId] = useState<string | null>(null);

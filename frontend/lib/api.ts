@@ -11,6 +11,8 @@ import type {
   Favorite,
   StorageInfo,
   ApiError,
+  SkillSearchInput,
+  SkillSearchResults,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -121,6 +123,23 @@ class ApiClient {
 
   async deleteFavorite(favoriteId: string): Promise<void> {
     await this.request(`/favorites/${favoriteId}`, { method: "DELETE" });
+  }
+
+  // ─── Skills ───
+
+  async createSkillSearch(brief: SkillSearchInput): Promise<{ search_id: string; status: string }> {
+    return this.request("/skills/search", {
+      method: "POST",
+      body: JSON.stringify({ brief }),
+    });
+  }
+
+  async getSkillSearchStatus(searchId: string): Promise<SearchStatus> {
+    return this.request<SearchStatus>(`/skills/search/${searchId}/status`);
+  }
+
+  async getSkillSearchResults(searchId: string): Promise<SkillSearchResults> {
+    return this.request<SkillSearchResults>(`/skills/search/${searchId}/results`);
   }
 
   // ─── System ───

@@ -20,6 +20,8 @@ _memory_store: dict[str, dict[str, Any]] = {
     "cloned_repos": {},
     "prompts": {},
     "favorites": {},
+    "skill_searches": {},
+    "skill_candidates": {},
 }
 
 
