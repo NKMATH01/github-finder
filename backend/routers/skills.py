@@ -121,6 +121,25 @@ async def create_skill_search(request: SkillSearchRequest, background_tasks: Bac
     return SkillSearchResponse(search_id=search_id, status="pending")
 
 
+@router.get("/skills/search/{search_id}/status")
+async def get_skill_search_status(search_id: str):
+    """스킬 검색 진행 상태 폴링 (SSE fallback)."""
+    progress = _skill_progress.get(search_id)
+    if progress:
+        return SkillSearchStatus(
+            status=progress.get("status", "pending"),
+            progress=progress.get("progress", 0),
+            message=progress.get("message", ""),
+            step=progress.get("step", 0),
+            warnings=progress.get("warnings"),
+        )
+    raise AppException(
+        code=ErrorCodes.SEARCH_NOT_FOUND,
+        message="스킬 검색을 찾을 수 없습니다.",
+        status_code=404,
+    )
+
+
 @router.get("/skills/search/{search_id}/stream")
 async def stream_skill_search(search_id: str):
     """SSE 실시간 진행률 스트림."""

@@ -121,25 +121,44 @@ async def search_skills(
             )
 
     results = []
-    items = data if isinstance(data, list) else data.get("results", data.get("skills", data.get("data", [])))
-    if not isinstance(items, list):
-        items = []
+    skill_items: list[dict] = []
 
-    for item in items:
+    if isinstance(data, dict):
+        inner = data.get("data", data)
+        if isinstance(inner, dict):
+            if method == "ai":
+                # AI search: data.data.data[].skill
+                raw_results = inner.get("data", [])
+                if isinstance(raw_results, list):
+                    for r in raw_results:
+                        if isinstance(r, dict) and "skill" in r:
+                            skill_items.append(r["skill"])
+            else:
+                # Keyword search: data.data.skills[]
+                skills_list = inner.get("skills", inner.get("results", inner.get("data", [])))
+                if isinstance(skills_list, list):
+                    skill_items = skills_list
+        elif isinstance(inner, list):
+            skill_items = inner
+    elif isinstance(data, list):
+        skill_items = data
+
+    for item in skill_items:
         if not isinstance(item, dict):
             continue
         results.append(SkillResult(
             skill_id=str(item.get("id", item.get("skill_id", ""))),
             name=item.get("name", item.get("title", "")),
             description=item.get("description", item.get("summary", "")),
-            github_url=item.get("github_url", item.get("repo_url", item.get("url", ""))),
+            github_url=item.get("githubUrl", item.get("github_url", item.get("repo_url", ""))),
             skill_path=item.get("skill_path", item.get("path", "")),
             category=item.get("category", item.get("type", "")),
             stars=int(item.get("stars", item.get("star_count", 0))),
-            last_updated=item.get("last_updated", item.get("updated_at")),
+            last_updated=item.get("updatedAt", item.get("last_updated", item.get("updated_at"))),
             author=item.get("author", item.get("owner", "")),
         ))
 
+    logger.info("SkillsMP %s 검색 완료: query=%s → %d개 스킬", method, query, len(results))
     return results
 
 
@@ -156,13 +175,22 @@ async def fetch_skill_detail(skill: SkillResult) -> SkillDetail:
 
 
 async def fetch_skill_md(github_url: str, skill_path: str) -> str:
-    """GitHub raw URL에서 SKILL.md 원문을 가져옵니다."""
-    # github_url → raw URL 변환
-    # https://github.com/owner/repo → https://raw.githubusercontent.com/owner/repo/main/{skill_path}/SKILL.md
+    """GitHub raw URL에서 SKILL.md 원문을 가져옵니다.
+
+    githubUrl 형태 대응:
+    - https://github.com/owner/repo/tree/main/.claude/skills/xxx → branch=main, path=.claude/skills/xxx
+    - https://github.com/owner/repo → skill_path 파라미터 사용
+    """
     raw_url = ""
     if "github.com" in github_url:
         parts = github_url.rstrip("/").replace("https://github.com/", "").split("/")
-        if len(parts) >= 2:
+        if len(parts) >= 4 and parts[2] == "tree":
+            # tree URL: owner/repo/tree/branch/path/to/skill
+            owner, repo, _, branch = parts[0], parts[1], parts[2], parts[3]
+            dir_path = "/".join(parts[4:]) if len(parts) > 4 else ""
+            suffix = f"{dir_path}/SKILL.md" if dir_path else "SKILL.md"
+            raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{suffix}"
+        elif len(parts) >= 2:
             owner, repo = parts[0], parts[1]
             path_prefix = f"{skill_path}/" if skill_path else ""
             raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/main/{path_prefix}SKILL.md"
