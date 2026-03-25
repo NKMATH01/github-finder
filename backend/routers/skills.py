@@ -15,6 +15,7 @@ from models.skill_models import (
     SkillSearchResults,
     ClassifiedSkill,
     SkillPackage,
+    SkillDownloadRequest,
 )
 from models.error_models import AppException, ErrorCodes
 from services.skill_pipeline import run_skill_pipeline
@@ -210,19 +211,9 @@ async def get_skill_results(search_id: str):
 
 
 @router.post("/skills/download")
-async def download_skill_endpoint(body: dict):
+async def download_skill_endpoint(body: SkillDownloadRequest):
     """스킬 파일 다운로드 + 설치 정보 반환."""
-    github_url = body.get("github_url", "")
-    skill_path = body.get("skill_path", "")
-
-    if not github_url:
-        raise AppException(
-            code=ErrorCodes.VALIDATION_ERROR,
-            message="github_url은 필수입니다.",
-            status_code=400,
-        )
-
-    package = await download_skill(github_url, skill_path)
+    package = await download_skill(body.github_url, body.skill_path)
     return package.model_dump()
 
 

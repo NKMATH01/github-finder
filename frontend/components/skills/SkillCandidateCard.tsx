@@ -81,6 +81,9 @@ export function SkillCandidateCard({ candidate, rank }: SkillCandidateCardProps)
         {/* 메타 */}
         <div className="flex items-center gap-3 mb-3 text-xs text-slate-400">
           <span className="flex items-center gap-1">GitHub {candidate.stars.toLocaleString()}</span>
+          <span className="inline-flex items-center rounded bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 text-[10px] text-amber-600 font-medium">
+            LLM 분석 기반 (실행 미검증)
+          </span>
         </div>
 
         {/* 설명 */}

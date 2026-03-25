@@ -65,6 +65,7 @@ class ScoredSkill(BaseModel):
     skill_md_content: str = ""
     total_score: int = 0
     score_detail: SkillScoreDetail = SkillScoreDetail()
+    confidence_label: str = "LLM 분석 기반 (실행 미검증)"
     pros: list[str] = []
     cons: list[str] = []
     warnings: list[str] = []
@@ -77,6 +78,11 @@ class ClassifiedSkill(ScoredSkill):
 
 
 # ─── 설치 ───
+
+class SkillDownloadRequest(BaseModel):
+    github_url: str = Field(..., description="GitHub URL of the skill")
+    skill_path: str = Field(default="", description="Path to the skill within the repo")
+
 
 class SkillPackage(BaseModel):
     skill_name: str

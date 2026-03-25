@@ -28,8 +28,6 @@ from services.github_cache import (
 
 logger = logging.getLogger(__name__)
 
-SKILLSMP_BASE = "https://skillsmp.com/api/v1"
-
 
 class SkillsmpRateLimitError(Exception):
     """SkillsMP 429 재시도용 예외."""
@@ -100,7 +98,7 @@ async def search_skills(
     method="ai" → /skills/ai-search
     """
     endpoint = "skills/ai-search" if method == "ai" else "skills/search"
-    url = f"{SKILLSMP_BASE}/{endpoint}"
+    url = f"{settings.SKILLSMP_BASE_URL}/{endpoint}"
     params = {"q": query}
 
     async with httpx.AsyncClient(timeout=20.0) as client:

@@ -150,6 +150,7 @@ CREATE TABLE IF NOT EXISTS skill_candidates (
   category_reason TEXT,
   total_score INTEGER DEFAULT 0,
   score_detail JSONB NOT NULL DEFAULT '{}'::JSONB,
+  confidence_label TEXT DEFAULT 'LLM 분석 기반 (실행 미검증)',
   skill_md_preview TEXT,
   pros TEXT[] DEFAULT '{}',
   cons TEXT[] DEFAULT '{}',

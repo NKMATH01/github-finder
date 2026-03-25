@@ -195,6 +195,7 @@ async def run_skill_pipeline(
                 "total_score": skill.total_score,
                 "score_detail": skill.score_detail.model_dump(),
                 "skill_md_preview": skill.skill_md_content[:2000] if skill.skill_md_content else "",
+                "confidence_label": skill.confidence_label,
                 "pros": skill.pros,
                 "cons": skill.cons,
                 "warnings": skill.warnings,
