@@ -106,7 +106,7 @@ export function SkillBriefForm({ onSubmit, isLoading }: SkillBriefFormProps) {
             대상 도구
             <span className="text-slate-400 text-xs">선택</span>
           </label>
-          <Select value={targetTool} onValueChange={setTargetTool}>
+          <Select value={targetTool} onValueChange={(v) => v && setTargetTool(v)}>
             <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50/50 text-sm">
               <SelectValue />
             </SelectTrigger>
